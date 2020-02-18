@@ -100,3 +100,51 @@ def myconvovle2d(A,kernel,fillvalue=0):
         j_e = j-l if j<l else n
         X+=A_pad[i:i_e,j:j_e]*v
     return X
+
+if __name__=="__main__":
+    input_img_file = "Terrain_propre1.png"
+    img = cv2.imread(input_img_file)
+
+    blured_img = cv2.GaussianBlur(img,(5,5),0)
+    edges = cv2.Canny(blured_img,75,150)
+    plt.imshow(edges)
+    plt.title("Canny Edge detection")
+    plt.show()
+
+    # masked_edges = mask_edges(edges)
+    masked_edges = edges
+    plt.imshow(masked_edges)
+    plt.title("Canny Edge detection - Mask")
+    plt.show()
+
+    accuracy_theta = np.pi/180
+    accuracy_rho = 2
+    min_votes = 200
+    neighborhood_size = 1
+
+    H = voting_hough_space(masked_edges,accuracy_rho,accuracy_theta)
+    plt.imshow(H)
+    plt.title("Hough Space")
+    plt.show()
+
+    local_maxima = retrieve_local_maxima(H,min_votes,neighborhood_size)    
+    plt.imshow(H)
+    plt.title("Hough Space - Local Maxima")
+    plt.plot([y for (x,y) in  local_maxima],[x for (x,y) in  local_maxima], 'ro')
+    plt.show()
+
+    lines = hough_transform(masked_edges, accuracy_rho, accuracy_theta, min_votes, neighborhood_size)
+    # lines = cv2.HoughLines(masked_edges, accuracy_rho, accuracy_theta, min_votes)
+    # lines = [(line[0][0], line[0][1]) for line in lines]
+    for (rho, theta) in lines:
+        a = np.cos(theta)
+        b = np.sin(theta)
+        x0 = rho*np.cos(theta)
+        y0 = rho*np.sin(theta)
+        pt1 =  (int(x0 + 10000*(-b)), int(y0 + 10000*(a)));
+        pt2 =  (int(x0 - 10000*(-b)), int(y0 - 10000*(a)));
+        cv2.line(img, pt1, pt2, (0,255,0), 4)
+
+    cv2.imwrite('Terrain_propre1_output.png',img)
+    cv2.imshow("img",img)
+    cv2.waitKey(0)
